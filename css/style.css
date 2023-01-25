@@ -1,0 +1,40 @@
+body {
+    text-align: center;
+    background-color: black;
+    color: aliceblue;
+}
+
+table {
+    margin: auto;
+    margin-top: 20px;
+}
+
+h2 {
+    text-align: left;
+}
+
+h2 .lives {
+    margin-left: 40%;
+}
+
+h2 .face {
+margin-left: 10%;
+}
+
+.cell {
+    background-color: beige;
+    width: 40px;
+    height: 40px;
+    color: blue;
+}
+
+.cell img {
+    width: 25px;
+    height: auto;
+}
+
+footer {
+    position: fixed;
+    bottom: 15px;
+    left: 50px;
+}

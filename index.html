@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body onload="onInit()">
+    <h1>MINESWEEPER</h1>
+    <h2 class="info"><span class="lives"></span><span class="face"></span></h2>
+    <button onclick="resetBoard(4, 2)">Beginner</button>
+    <button onclick="resetBoard(8, 14)">Intermediate</button>
+    <button onclick="resetBoard(12, 32)">Expert</button>
+
+    <table>
+        <tbody class="board"></tbody>
+    </table>
+    <!-- <button onclick="resetBoard(4, 2)">RESET</button> -->
+    <footer>Elad Millar</footer>
+    <script src="js/util.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
