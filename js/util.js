@@ -40,13 +40,10 @@ function buildBoard(size) {
             board[i][j] = { i: i, j: j, isShown: false, isMarked: false, isMine: false, minesAroundCount: 0 }
         }
     }
-    // board[1][1].isMine = true
-    // board[3][3].isMine = true
     return board
 }
 
 function renderBoard(board) {
-    // console.log('board', board)
     var strHTML = ''
     for (var i = 0; i < board.length; i++) {
         strHTML += '<tr>'
@@ -63,10 +60,8 @@ function renderBoard(board) {
             strHTML += '</td>'
         }
         strHTML += '</tr>'
-        // console.log('strHTML', strHTML)
     }
     const elBoard = document.querySelector('.board')
-    // console.log('elBoard', elBoard)
     elBoard.innerHTML = strHTML
 }
 
@@ -78,5 +73,5 @@ function getClassName(location) {
 function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
+    return Math.floor(Math.random() * (max - min) + min);
 }

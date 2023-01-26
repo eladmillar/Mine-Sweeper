@@ -1,22 +1,19 @@
 'use strict'
 
+document.body.style.backgroundImage = "url('img/darkbackground.jpg')";
 const MINE = '💣'
 const MARKED = '🚩'
 const NORMAL = '🙂'
 const BOMB = '🤯'
 const DEFEAT = '😵'
 const VICTORY = '😎'
+const LIGHTON = '<img src="img/lighton.png">'
+const LIGHTOFF = '<img src="img/lightoff.png">'
 
 const noRightClick = document.querySelector('.board')
 noRightClick.addEventListener("contextmenu", e => e.preventDefault());
 
 var gBoard
-// var cell = {
-//     minesAroundCount: 4,
-//     isShown: false,
-//     isMine: false,
-//     isMarked: true
-// }
 var elLives
 var elFace
 var firstMove = true
@@ -24,6 +21,18 @@ var gBombTimeout
 var gFaceTimeout
 var gGame
 var cellsNeeded
+var isMegaHint = false
+var megaHintCells = []
+var isHint = false
+var usedHint
+var safeClicksCount = 3
+var elSafeClick = document.querySelector('.addons button span')
+var safeCellTimeout
+var elHintCell
+var isHintOn
+var isLightMode = false
+var resetSize = 4
+var resetMines = 2
 var gLevel = {
     size: 4,
     mines: 2
@@ -31,6 +40,13 @@ var gLevel = {
 
 function resetBoard(size, mines) {
     firstMove = true
+    isHint = false
+    safeClicksCount = 3
+    elSafeClick.innerText = `${safeClicksCount}`
+    isMegaHint = false
+    megaHintCells = []
+    document.querySelector('.megahint').style.backgroundColor = 'aqua'
+    if (usedHint) resetHints()
     gGame = {
         isOn: true,
         lifeCount: 3,
@@ -38,6 +54,8 @@ function resetBoard(size, mines) {
         markedCount: 0,
         secsPassed: 0
     }
+    resetSize = size
+    resetMines = mines
     gLevel = {
         size: size,
         mines: mines
@@ -47,6 +65,8 @@ function resetBoard(size, mines) {
 }
 
 function onInit() {
+    var elModal = document.querySelector('.modal')
+    elModal.style.display = 'none'
     gGame = {
         isOn: true,
         lifeCount: 3,
@@ -65,7 +85,6 @@ function onCellClicked(i, j) {
     if (!gGame.isOn) return
     var elCell = document.querySelector(`.cell-${i}-${j}`)
     var thisCell = gBoard[i][j]
-    if (thisCell.isMarked) return
     if (firstMove) {
         randomizeMines(gLevel.mines, i, j)
         renderBoard(gBoard)
@@ -73,8 +92,42 @@ function onCellClicked(i, j) {
         revealCell(i, j)
         return
     }
-    if (!thisCell.isMine) {
+    if (isMegaHint) {
+        megaHintCells.push(thisCell)
+        if (megaHintCells.length === 2) {
+            var cells = useMegaHint(megaHintCells[0], megaHintCells[1])
+            // console.log('cells', cells)
+            setTimeout(hideAfterMegaHint, 2000, cells)
+            document.querySelector('.megahint').style.backgroundColor = 'gray'
+            isMegaHint = false
+        }
+        return
+    }
+    if (thisCell.isMarked) return
+    if (thisCell.isShown) return
+    if (isHintOn) {
+        clearTimeout(safeCellTimeout)
+        console.log('elHintCell', elHintCell)
+        elHintCell.style.backgroundColor = 'beige'
+        var elHintCellText = elHintCell.querySelector('span')
+        console.log('elhintCellText', elHintCellText.innerText)
+        if (elHintCellText.innerText === '0') {
+            console.log('hi')
+            elHintCellText.style.backgroundColor = 'rgb(193, 186, 186)'
+            isHintOn = false
+        }
+    }
+    if (isHint) {
         if (thisCell.isShown) return
+        var revealed = revealWithHint(i, j)
+        setTimeout(hideAfterHint, 1000, i, j, revealed)
+        usedHint.innerHTML = LIGHTOFF
+        isHint = false
+        usedHint.style.display = 'none'
+        return
+    }
+
+    if (!thisCell.isMine) {
         revealCell(i, j)
         return
     }
@@ -89,6 +142,48 @@ function onCellClicked(i, j) {
     }
 }
 
+function revealWithHint(cellI, cellJ) {
+    var revealedCells = []
+    for (var i = cellI - 1; i <= cellI + 1; i++) {
+        // wont count beyond border(undefined)
+        if (i < 0 || i >= gBoard.length) continue
+        for (var j = cellJ - 1; j <= cellJ + 1; j++) {
+            if (j < 0 || j >= gBoard[i].length) continue
+            var elCell = document.querySelector(`.cell-${i}-${j}`)
+            var thisCell = gBoard[i][j]
+            if (thisCell.isShown) revealedCells.push(thisCell)
+            elCell.querySelector('span').style.display = 'inline'
+            thisCell.isShown = true
+            elCell.style.backgroundColor = 'rgb(193, 186, 186)'
+            thisCell.minesAroundCount = countNegs(i, j, gBoard)
+        }
+    }
+    return revealedCells
+}
+
+function hideAfterHint(cellI, cellJ, revealedCells) {
+    for (var i = cellI - 1; i <= cellI + 1; i++) {
+        // wont count beyond border(undefined)
+        if (i < 0 || i >= gBoard.length) continue
+        for (var j = cellJ - 1; j <= cellJ + 1; j++) {
+            if (j < 0 || j >= gBoard[i].length) continue
+            var elCell = document.querySelector(`.cell-${i}-${j}`)
+            var thisCell = gBoard[i][j]
+            if (thisCell.isMarked) continue
+            elCell.querySelector('span').style.display = 'none'
+            thisCell.isShown = false
+            elCell.style.backgroundColor = 'rgb(217, 176, 123)'
+            for (var k = 0; k < revealedCells.length; k++) {
+                if (thisCell.i === revealedCells[k].i && thisCell.j === revealedCells[k].j) {
+                    elCell.querySelector('span').style.display = 'inline'
+                    thisCell.isShown = true
+                    elCell.style.backgroundColor = 'rgb(193, 186, 186)'
+                }
+            }
+        }
+    }
+}
+
 function revealCell(i, j) {
     var elCell = document.querySelector(`.cell-${i}-${j}`)
     var thisCell = gBoard[i][j]
@@ -97,7 +192,7 @@ function revealCell(i, j) {
     gGame.shownCount++
     elCell.style.backgroundColor = 'rgb(193, 186, 186)'
     thisCell.minesAroundCount = countNegs(i, j, gBoard)
-    if (thisCell.minesAroundCount === 0) {
+    if (thisCell.minesAroundCount === 0 && !isMegaHint) {
         revealNeighbors(i, j, gBoard)
     }
     checkGameOver()
@@ -167,6 +262,108 @@ function getRandomCell(board) {
     return currCell
 }
 
+function onSafeClick() {
+    isHintOn = true
+    if (safeClicksCount === 0) return
+    safeClicksCount--
+    elSafeClick.innerText = `${safeClicksCount}`
+    var cellToReveal = getSafeCell(gBoard)
+    elHintCell = document.querySelector(`.cell-${cellToReveal.i}-${cellToReveal.j}`)
+    elHintCell.style.backgroundColor = 'rgb(47, 162, 137)'
+    safeCellTimeout = setTimeout(() => elHintCell.style.backgroundColor = 'rgb(217, 176, 123)', 2000)
+    setTimeout(() => isHintOn = false, 2000)
+}
+
+function getSafeCell(board) {
+    var currCell = board[getRandomInt(0, board.length)][getRandomInt(0, board.length)]
+    if (currCell.isShown) return getSafeCell(board)
+    if (currCell.isMine) return getSafeCell(board)
+    return currCell
+}
+
+function useHint(item) {
+    if (isHint && usedHint === item) {
+        isHint = false
+        item.innerHTML = LIGHTOFF
+        return
+    }
+    if (isHint) {
+        item.innerHTML = LIGHTOFF
+        return
+    }
+    usedHint = item
+    item.innerHTML = LIGHTON
+    isHint = true
+}
+
+function resetHints() {
+    usedHint.innerHTML = LIGHTOFF
+    document.querySelector('.hint1').style.display = 'inline'
+    document.querySelector('.hint2').style.display = 'inline'
+    document.querySelector('.hint3').style.display = 'inline'
+}
+
+function bgcMode() {
+    var elBody = document.querySelector('body')
+    if (isLightMode === false) {
+        document.body.style.backgroundImage = "url('img/lightbackground.jpg')";
+        elBody.style.color = 'black'
+        // elBody.style.backgroundColor = 'white'
+        isLightMode = true
+        return
+    }
+    else {
+        document.body.style.backgroundImage = "url('img/darkbackground.jpg')";
+        elBody.style.color = 'white'
+        // elBody.style.backgroundColor = 'black'
+        isLightMode = false
+        return
+    }
+}
+
+function callMegaHint(elButton) {
+    if (elButton.style.backgroundColor === 'gray') return console.log('hi')
+    if (isMegaHint) {
+        isMegaHint = false
+        elButton.style.backgroundColor = 'aqua'
+        return
+    }
+    isMegaHint = true
+    elButton.style.backgroundColor = 'yellow'
+}
+
+function useMegaHint(cell1, cell2) {
+    var hintCells = []
+    for (var i = cell1.i; i < cell2.i + 1; i++) {
+        for (var j = cell1.j; j < cell2.j + 1; j++) {
+            var elCell = document.querySelector(`.cell-${i}-${j}`)
+            var thisCell = gBoard[i][j]
+            console.log('hintCells', hintCells)
+            if (thisCell.isShown) continue
+            if (thisCell.isMarked) continue
+            elCell.querySelector('span').style.display = 'inline'
+            thisCell.isShown = true
+            elCell.style.backgroundColor = 'rgb(193, 186, 186)'
+            thisCell.minesAroundCount = countNegs(i, j, gBoard)
+            hintCells.push(thisCell)
+        }
+    }
+    return hintCells
+}
+
+function hideAfterMegaHint(megaHintCells) {
+    for (var i = 0; i < megaHintCells.length; i++) {
+        var elCell = document.querySelector(`.cell-${megaHintCells[i].i}-${megaHintCells[i].j}`)
+        var thisCell = gBoard[megaHintCells[i].i][megaHintCells[i].j]
+        if (thisCell.isMarked) continue
+        elCell.querySelector('span').style.display = 'none'
+        thisCell.isShown = false
+        elCell.style.backgroundColor = 'rgb(217, 176, 123)'
+    }
+}
+
+
+
 function checkGameOver() {
     if (gGame.lifeCount === 0) {
         var elMines = document.querySelectorAll('.mine span')
@@ -175,11 +372,17 @@ function checkGameOver() {
         clearTimeout(gFaceTimeout)
         document.querySelector('.face').innerText = `${DEFEAT}`
         console.log('YOU LOSE')
+        var elModal = document.querySelector('.modal')
+        elModal.style.display = 'block'
+        elModal.querySelector('.user-msg').innerText = `YOU LOSE! ${DEFEAT}`
         gGame.isOn = false
     }
     if (gGame.shownCount === cellsNeeded && gGame.markedCount === gLevel.mines) {
         document.querySelector('.face').innerText = `${VICTORY}`
         console.log('YOU WIN')
+        var elModal = document.querySelector('.modal')
+        elModal.style.display = 'block'
+        elModal.querySelector('.user-msg').innerText = `VICTORY! ${VICTORY}`
         gGame.isOn = false
     }
 }

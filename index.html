@@ -11,7 +11,18 @@
 
 <body onload="onInit()">
     <h1>MINESWEEPER</h1>
-    <h2 class="info"><span class="lives"></span><span class="face"></span></h2>
+    <div class="info">
+        <h2><span class="lives"></span><span class="face" onclick="resetBoard(resetSize,resetMines)"></span>
+        </h2>
+    </div>
+    <div class="addons">
+        <button onclick="onSafeClick()">Safe Clicks left: <span>3</span></button>
+        <span class="hint hint1" onclick="useHint(this)"><img src="img/lightoff.png"></span>
+        <span class="hint hint2" onclick="useHint(this)"><img src="img/lightoff.png"></span>
+        <span class="hint hint3" onclick="useHint(this)"><img src="img/lightoff.png"></span>
+        <button class="megahint" onclick="callMegaHint(this)">Mega Hint</button>
+    </div>
+
     <button onclick="resetBoard(4, 2)">Beginner</button>
     <button onclick="resetBoard(8, 14)">Intermediate</button>
     <button onclick="resetBoard(12, 32)">Expert</button>
@@ -19,6 +30,11 @@
     <table>
         <tbody class="board"></tbody>
     </table>
+    <button class="lightmode" onclick="bgcMode()">lightmode</button>
+    <div class="modal">
+        <h2 class="user-msg"></h2>
+        <button onclick="resetBoard(resetSize,resetMines)">PLAY AGAIN</button>
+    </div>
     <!-- <button onclick="resetBoard(4, 2)">RESET</button> -->
     <footer>Elad Millar</footer>
     <script src="js/util.js"></script>
